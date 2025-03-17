@@ -267,6 +267,9 @@ add_library(
   src/libtorch.cc
   src/libtorch_utils.cc
   src/libtorch_utils.h
+  # Momo
+  src/momo_utils.cc
+  src/momo_utils.h
 )
 
 add_library(

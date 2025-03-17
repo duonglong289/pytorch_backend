@@ -29,6 +29,8 @@
 #include <cstdint>
 #include <exception>
 
+#include "momo_utils.h"
+
 #include "libtorch_utils.h"
 #include "triton/backend/backend_common.h"
 #include "triton/backend/backend_input_collector.h"
@@ -271,9 +273,27 @@ ModelState::LoadModel(
     }
   }
 
+
+  LOG_MESSAGE(
+    TRITONSERVER_LOG_INFO,
+    (std::string("TRITONBACKEND_Initialize MoMo branch with model '" + cc_model_filename + "'")).c_str());
+
   // Serialize the torch model to string
   std::string model_data_str;
   RETURN_IF_ERROR(ReadTextFile(*model_path, &model_data_str));
+
+  bool is_encrypted = EndsWith(*model_path, ".enc");
+  if (is_encrypted) {
+      std::string decrypted_model_data;
+      std::string key = "2a3c284f65855b703778bd5fdd39c87fd606a6bdae74c44a9cb3f6afb34ee221"; // Replace with actual key
+      if (!DecryptModel(*model_path, key, &decrypted_model_data)) {
+          return TRITONSERVER_ErrorNew(
+            TRITONSERVER_ERROR_INTERNAL,
+              ("Failed to decrypt model '" + cc_model_filename + "'")
+              .c_str());
+      }
+      model_data_str = std::move(decrypted_model_data);
+  }
 
   // InferenceMode should be used to guard all tensors operations including
   // model loading: https://pytorch.org/cppdocs/notes/inference_mode.html
